@@ -1,58 +1,86 @@
-﻿using CWDApi.Models;
+﻿using CWDApi.DTOs;
+using CWDApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CWDApi.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class HabitController : ControllerBase
+    public class HabitController(IHabitService service) : Controller
     {
-        private static List<CWDHabit> Habits = [];
+        private readonly IHabitService _service = service;
 
         [HttpGet("")]
-        public ActionResult<List<CWDHabit>> Get()
+        public async Task<IActionResult> GetAllHabits()
         {
-            return Habits;
+            try
+            {
+                var habits = await _service.GetAllAsync();
+                return Ok(habits);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
         [HttpGet("{id}")]
-        public ActionResult<CWDHabit> GetById(int id)
+        public async Task<IActionResult> GetHabitById(int id)
         {
-            CWDHabit? habit = Habits.FirstOrDefault(t => t.Id == id);
-            return habit != null ? habit : NotFound($"Habit with id {{{id}}} not existing");
+            try
+            {
+                HabitReadDto? habit = await _service.GetByIdAsync(id);
+                return habit != null ? Ok(habit) : NotFound($"Habit with id {{{id}}} not existing");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
         [HttpPost("")]
-        public IActionResult Create(CWDHabit newHabit)
+        public async Task<IActionResult> CreateHabit(HabitCreateDto newHabit)
         {
-            if (newHabit.Id != 0) return BadRequest("Cannot create with Id different from zero");
-            Habits.Add(newHabit);
-            return Ok();
+            try
+            {
+                HabitReadDto? created = await _service.CreateAsync(newHabit);
+                if (created == null) return StatusCode(500);
+                return CreatedAtAction(nameof(GetAllHabits), new { id = created.Id }, created);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
-        [HttpPut("{id}")]
-        public ActionResult<CWDHabit> Update(int id, CWDHabit newHabit)
+        [HttpPut("")]
+        public async Task<IActionResult> UpdateHabit(HabitUpdateDto dto)
         {
-            // Impossible id
-            if (id == 0) return BadRequest("Impossible id (0)");
-            // Id not existing
-            if (!Habits.Select(habit => habit.Id).Contains(id)) return NotFound($"Habit with id {{{id}}} not existing");
-            // Update the id of the new habit
-            newHabit.Id = id;
-            // Save the habits
-            Habits = [.. Habits.Select(habit => habit.Id == id ? newHabit : habit)];
-            // Return the edited habit
-            return newHabit;
+            try
+            {
+                HabitReadDto? updated = await _service.UpdateAsync(dto);
+                if (updated == null) return NotFound(new { message = $"Habit with id {dto.Id} not found" });
+                return Ok(updated);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> DeleteHabitById(int id)
         {
-            if (id == 0) return BadRequest("Id cannot be zero");
-            CWDHabit? habit = Habits.FirstOrDefault(habit => habit.Id == id);
-            if (habit == null) return NotFound($"Habit with id {{{id}}} not existing");
-            Habits.Remove(habit);
-            return Ok();
+            try
+            {
+                bool deleted = await _service.DeleteByIdAsync(id);
+                if (!deleted) return NotFound(new { message = $"Habit with id {id} not found" });
+                return Ok(deleted);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
     }
 }

@@ -1,59 +1,87 @@
-﻿using CWDApi.Data;
+﻿using CWDApi.DTOs;
+using CWDApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CWDApi.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class NotesController : ControllerBase
+    public class NotesController(INoteService service) : Controller
     {
-        private static List<CWDNote> Notes = [];
-
+        private readonly INoteService _service = service;
 
         [HttpGet("")]
-        public ActionResult<List<CWDNote>> Get()
+        public async Task<IActionResult> GetAllNotes()
         {
-            return Notes;
+            try
+            {
+                var notes = await _service.GetAllAsync();
+                return Ok(notes);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
         [HttpGet("{id}")]
-        public ActionResult<CWDNote> GetById(int id)
+        public async Task<IActionResult> GetNoteById(int id)
         {
-            CWDNote? note = Notes.FirstOrDefault(n => n.Id == id);
-            if (note == null) return NotFound($"Note with id {{{id}}} not existing");
-            return note;
+            try
+            {
+                NoteReadDto? note = await _service.GetByIdAsync(id);
+                if (note == null) return NotFound(new { message = $"Note with id {id} not found" });
+                return Ok(note);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
         [HttpPost("")]
-        public IActionResult Create(CWDNote newNote)
+        public async Task<IActionResult> CreateNote(NoteCreateDto dto)
         {
-            if (newNote.Id != 0) return BadRequest("Cannot create with Id different from zero");
-            Notes.Add(newNote);
-            return Ok();
+            try
+            {
+                NoteReadDto? created = await _service.CreateAsync(dto);
+                if (created == null) return StatusCode(500);
+                return CreatedAtAction(nameof(GetAllNotes), new { id = created.Id }, created);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
-        [HttpPut("{id}")]
-        public ActionResult<CWDNote> Update(int id, CWDNote newNote)
+        [HttpPut("")]
+        public async Task<IActionResult> UpdateNote(NoteUpdateDto dto)
         {
-            // Impossible id
-            if (id == 0) return BadRequest("Impossible id (0)");
-            // Id not existing
-            if (!Notes.Select(note => note.Id).Contains(id)) return NotFound($"Note with id {{{id}}} not existing");
-            // Update the id of the new note
-            newNote.Id = id;
-            // Save the notes
-            Notes = [.. Notes.Select(note => note.Id == id ? newNote : note)];
-            // Return the edited note
-            return newNote;
+            try
+            {
+                NoteReadDto? updated = await _service.UpdateAsync(dto);
+                if (updated == null) return BadRequest(new { message = $"Error updating the note with id {dto.Id}" });
+                return Ok(updated);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteById(int id)
+        public async Task<IActionResult> DeleteNoteById(int id)
         {
-            CWDNote? note = Notes.FirstOrDefault(n => n.Id == id);
-            if (note == null) return NotFound($"Note with id {{{id}}} not existing");
-            Notes.Remove(note);
-            return Ok();
+            try
+            {
+                bool deleted = await _service.DeleteByIdAsync(id);
+                if (!deleted) return NotFound(new { message = $"Note with id {id} not found" });
+                return Ok(deleted);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
     }
 }

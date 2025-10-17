@@ -1,70 +1,86 @@
-﻿using CWDApi.Data;
+﻿using CWDApi.DTOs;
+using CWDApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CWDApi.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class TasksController : Controller
+    public class TasksController(ITaskService service) : Controller
     {
-        private static List<CWDTask> Tasks =
-        [
-            new CWDTask()
-            {
-                Id = 1,
-                Name = "Un",
-            },
-            new CWDTask()
-            {
-                Id = 2,
-                Name = "Deux",
-            },
-        ];
-
+        private readonly ITaskService _service = service;
 
         [HttpGet("")]
-        public ActionResult<List<CWDTask>> Get()
+        public async Task<IActionResult> GetAllTasks()
         {
-            return Tasks;
+            try
+            {
+                var tasks = await _service.GetAllAsync();
+                return Ok(tasks);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
         [HttpGet("{id}")]
-        public ActionResult<CWDTask> GetById(int id)
+        public async Task<IActionResult> GetTaskById(int id)
         {
-            CWDTask? task = Tasks.FirstOrDefault(t => t.Id == id);
-            return task != null ? task : NotFound($"Task with id {{{id}}} not existing");
+            try
+            {
+                TaskReadDto? task = await _service.GetByIdAsync(id);
+                return task != null ? Ok(task) : NotFound(new { message = $"Task with id {{{id}}} not existing" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
         [HttpPost("")]
-        public IActionResult Create(CWDTask newTask)
+        public async Task<IActionResult> CreateTask([FromBody] TaskCreateDto dto)
         {
-            if (newTask.Id != 0) return BadRequest("Cannot create with Id different from zero");
-            Tasks.Add(newTask);
-            return Ok();
+            try
+            {
+                TaskReadDto? created = await _service.CreateAsync(dto);
+                if (created == null) return BadRequest(new { message = "Cannot create with Id different from zero" });
+                return CreatedAtAction(nameof(GetAllTasks), new { id = created.Id }, created);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
-        [HttpPut("{id}")]
-        public ActionResult<CWDTask> Update(int id, CWDTask newTask)
+        [HttpPut("")]
+        public async Task<IActionResult> UpdateTask(TaskUpdateDto dto)
         {
-            // Impossible id
-            if (id == 0) return BadRequest("Impossible id (0)");
-            // Id not existing
-            if (!Tasks.Select(task => task.Id).Contains(id)) return NotFound($"Task with id {{{id}}} not existing");
-            // Update the id of the new task
-            newTask.Id = id;
-            // Save the tasks
-            Tasks = [.. Tasks.Select(task => task.Id == id ? newTask : task)];
-            // Return the edited task
-            return newTask;
+            try
+            {
+                TaskReadDto? updated = await _service.UpdateAsync(dto);
+                if (updated == null) return BadRequest(new { message = $"Task with id {dto.Id} not found" });
+                return Ok(updated);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteById(int id)
+        public async Task<IActionResult> DeleteTaskById(int id)
         {
-            CWDTask? task = Tasks.FirstOrDefault(t => t.Id == id);
-            if (task == null) return NotFound($"Task with id {{{id}}} not existing");
-            Tasks.Remove(task);
-            return Ok();
+            try
+            {
+                bool deleted = await _service.DeleteByIdAsync(id);
+                if (!deleted) return NotFound(new { message = $"Task with id {id} not found" });
+                return Ok(deleted);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
         }
     }
 }
