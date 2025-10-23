@@ -34,34 +34,34 @@ Each resource is handled through a **generic service and repository architecture
 
 ## 🏗 Architecture overview
 
-CWD.API/
-├── Controllers/
-│ ├── HabitController.cs
-│ ├── NotesController.cs
-│ └── TasksController.cs
-├── Data/
-│ └── ApiContext.cs
-├── Dtos/
-│ ├── HabitDto.cs
-│ ├── NoteDto.cs
-│ └── TaskDto.cs
-├── Entities/
-│ └── Habit.cs
-│ └── Note.cs
-│ └── TaskItem.cs
-├── Migrations/
-├── Services/
-│ ├── GenericService.cs
-│ ├── HabitService.cs
-│ ├── NoteService.cs
-│ ├── TaskService.cs
-├── Repositories/
-│ ├── GenericRepository.cs
-│ ├── HabitRepository.cs
-│ ├── NoteRepository.cs
-│ ├── TaskRepository.cs
-├── Program.cs
-└── appsettings.json
+CWD.API/  
+├── Controllers/  
+│ ├── HabitController.cs  
+│ ├── NotesController.cs  
+│ └── TasksController.cs  
+├── Data/  
+│ └── ApiContext.cs  
+├── Dtos/  
+│ ├── HabitDto.cs  
+│ ├── NoteDto.cs  
+│ └── TaskDto.cs  
+├── Entities/  
+│ └── Habit.cs  
+│ └── Note.cs  
+│ └── TaskItem.cs  
+├── Migrations/  
+├── Services/  
+│ ├── GenericService.cs  
+│ ├── HabitService.cs  
+│ ├── NoteService.cs  
+│ ├── TaskService.cs  
+├── Repositories/  
+│ ├── GenericRepository.cs  
+│ ├── HabitRepository.cs  
+│ ├── NoteRepository.cs  
+│ ├── TaskRepository.cs  
+├── Program.cs  
+└── appsettings.json  
 
 **Principles applied:**
 - Separation of Concerns (SoC)
